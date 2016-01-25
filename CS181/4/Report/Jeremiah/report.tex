@@ -1,0 +1,360 @@
+\documentclass[11pt]{article}
+
+%formating author affiliation
+\usepackage{authblk}
+\author[1]{(Jeremiah) Zhe Liu}
+\author[2]{(Vivian) Wenwan Yang}
+\author[1]{Jing Wen}
+\affil[1]{Department of Biostatistics, Harvard School of Public Health}
+\affil[2]{Department of Computational Science and Engineering, SEAS}
+
+% change document font family to Palatino, and code font to Courier
+\usepackage{mathpazo} % add possibly `sc` and `osf` options
+\usepackage{eulervm}
+\usepackage{courier}
+%allow formula formatting
+
+%identation in nested enumerates
+\usepackage[shortlabels]{enumitem}
+\setlist[enumerate,1]{leftmargin=1cm} % level 1 list
+\setlist[enumerate,2]{leftmargin=2cm} % level 2 list
+
+%flush align equations to left, this also loads amsmath 
+%\usepackage[fleqn]{mathtools}
+\usepackage{mathtools}
+\usepackage{amsthm}
+\DeclareMathAlphabet\mathbfcal{OMS}{cmsy}{b}{n}
+\usepackage{comment}
+
+%declare math symbolz
+%# inner product
+\DeclarePairedDelimiter{\inner}{\langle}{\rangle}
+
+%declare argmin
+\newcommand{\argmin}{\operatornamewithlimits{argmin}}
+\newcommand{\argmax}{\operatornamewithlimits{argmax}}
+
+%declare checkmark
+\usepackage{pifont}% http://ctan.org/pkg/pifont
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}%
+
+%title positon
+\usepackage{titling} %fix title
+\setlength{\droptitle}{-6em}   % Move up the title 
+
+%change section title font size
+\usepackage{titlesec} 
+\titleformat{\section}
+  {\normalfont\fontsize{12}{15}}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\fontsize{12}{13}}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+  {\normalfont\fontsize{12}{13}}{\thesubsubsection}{1em}{}
+
+%overwrite bfseries to allow formula in section title  
+\def\bfseries{\fontseries \bfdefault \selectfont \boldmath}
+
+% change page margin
+\usepackage[margin=0.8 in]{geometry} 
+
+%disable indentation
+\setlength\parindent{0pt}
+
+%allow inserting multiple graphs
+\usepackage{graphicx}
+\usepackage[skip=1pt]{subcaption}
+\usepackage[justification=centering,font=small]{caption}
+\newcommand{\indep}{\rotatebox[origin=c]{90}{$\models$}}%indep sign
+
+%allow code chunks
+\usepackage{listings}
+%\lstset{basicstyle=\footnotesize\ttfamily,breaklines=true}
+\lstset{basicstyle=\footnotesize\ttfamily,breaklines=true}
+\lstset{frame=lrbt,xleftmargin=\fboxsep, xrightmargin=-\fboxsep}
+\lstset{language=R, commentstyle=\bfseries, 
+keywordstyle=\ttfamily} %R-related formatting
+\lstset{escapeinside={<@}{@>}}
+
+%allow merged cell in tables
+\usepackage{multirow}
+
+%allow http links
+\usepackage{hyperref}
+
+%allow different font colors
+\usepackage{xcolor}
+
+%Thm and Def environment
+\theoremstyle{definition}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+
+\newenvironment{definition2}[1][Definition]{\begin{trivlist} %def without index
+\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+
+\newenvironment{example}[1][Example]{\begin{trivlist} %def without index
+\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+
+
+%macros from Bob Gray
+\usepackage{"./macro/GrandMacros"}
+\usepackage{"./macro/Macro_BIO235"}
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% TItle page with contents %%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{\textbf{CS 181 Machine Learning}\\ 
+\textbf{Practical 4 Report, Team \textit{la Derni\`{e}re Dame M}}}
+
+\pretitle{\begin{centering}\Large}
+\posttitle{\par\end{centering}}
+
+\date{\today}
+\vspace{-10em}
+\maketitle
+\vspace{-2em}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% Formal Sections %%%%% %%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{\textbf{Problem Description}}
+
+Set in a \textit{Flappy Bird}-type game \textit{Swingy Monkey}, our current learning task is to estimate the optimal policy function $\pi: \Ssc \rightarrow \Asc$ such that the expectation of reward function $R: \Ssc \times \Asc \rightarrow \Rsc$ is maximized, i.e. if define a stochastic process of game state $\{s_t\}$ with unknown transition probability $P(s_{t+1} \big| s_1, \dots, s_t, a_1, \dots, a_t)$, we aim to identify a $\pi^*$ such that
+
+\begin{align}
+\pi^* = arg\max_\pi E \Big( \sum_{s \in \bp} R(s, \pi(s)) \Big| \bp \Big)
+\label{eq:metric0}
+\end{align}
+
+where $\bp$ a sample path of $\{S_t\}$.\\
+
+In current setting, the state and action spaces are defined as:
+\begin{align*}
+\Ssc & =
+\begin{bmatrix}
+Tree_{\mbox{dist}} & Tree_{\mbox{top}} & Tree_{\mbox{bot}} &
+Monkey_{\mbox{vel}} & Monkey_{\mbox{top}} & Monkey_{\mbox{bot}}
+\end{bmatrix} \subset \mathbb{R}^6\\
+\Asc & = \begin{bmatrix} No Jump & Jump \end{bmatrix}
+\end{align*}
+Note theta $\big[ 
+Monkey_{\mbox{top}}, Monkey_{\mbox{bot}}, Tree_{\mbox{top}}, Tree_{\mbox{bot}}  \big]$ are in fact bounded by screen size (600 pxls).\\
+
+The reward function can be partially described as:
+\begin{align*}
+R: \quad
+\begin{bmatrix}
+\mbox{{\tt pass\_tree}} \\
+\mbox{{\tt hit\_trunk}} \\
+\mbox{{\tt hit\_edge}} \\
+\mbox{{\tt otherwise}} \\
+\end{bmatrix}
+\rightarrow
+\begin{bmatrix}
+1 \\ -5 \\ -10 \\ 0
+\end{bmatrix}
+\end{align*}
+
+where $\big[ \mbox{{\tt pass\_tree}}, \; \mbox{{\tt hit\_trunk}}, \; \mbox{{\tt hit\_edge}} \big]$ are unknown boolean functions of $s\in \Ssc$.
+
+\newpage
+\section{\textbf{Method}}
+
+\subsection{\textbf{Rationale on Model Choice}}
+In the previous section we identified below characteristics of the task at hand:
+\begin{enumerate}
+\item [(1)] Available Information:
+\begin{enumerate}
+\item Known $\Ssc$, $\Asc$ spaces. 
+\item Unknown transition probability $P(s_{t+1} \big| \{s_i\}_{i=0}^{t}, \{a_i\}_{i=1}^{t})$ and unknown reward function $R: \Ssc \times \Asc \rightarrow \Rsc$
+\end{enumerate}
+\item [(2)] $|\Asc| = 2$, while $\Ssc \subset \mathbb{R}^6$ is continous with $|\Ssc| = \infty$. 
+\item [(3)] Outcome metric: 
+$E \Big( \sum_{s \in \bp} R(s, \pi(s)) \Big| \bp \Big)$ the expected number of total reward in each play.
+\end{enumerate}
+
+If we are willing to assume Markovian property for the process $\{s_t\}$, i.e. $P(s_{t+1} \big| \{s_i\}_{i=0}^{t}, \{a_i\}_{i=1}^{t}) = P(s_{t+1} \big| s_t, a_t) $, such that the transition information can be described by a transition matrix $\bP$, the availabile information listed in $(1)$ put us into a Reinforcement Learning setting. Furthemore, based on information from $(2)$, we are relunctant to deploy model-based approach due to the lareg $\Ssc \times \Asc$ space. More specifically, since the model-based approach requires reasonably accurate estimation of $\bP$ (a $|\Ssc| \times |\Ssc| \times 2$ matrix), we need to visit each nontrivial position of $\bP$  sufficiently often in order to achieve reliable $\hat{P}(s'|s, a)$ estimates. Such computation, even after the discreting of the state space, is intractable in terms of both complexity and storage. Although the estimation of $\bP$ and $\bQ$ can be simplified by assuming $P(s'|s, a) = f(s', s, a)$ and $Q(s, a) = g(s, a)$ and model $f(.), g(.)$ using flexible, kernel-based methods, we decided not to add this extra layer of complexity in order to avoid skewed $\bP$ and $\bQ$ estimates due to improper functional assumption.
+
+Based on above consideration, we focused on Q-learning in our implementation, where the estimation task is greatly simplified by considering only the $\bQ$ matrix. Specifically, by expanding the Bellman equations, we have: 
+\begin{align*}
+Q(s,a) &= R(s,a)+\gamma\sum P(s'|s,a) max_{a'\in A}Q(s',a')\\
+&= R(s,a)+\gamma E_{s'}[max_{a'\in A}Q(s',a')]\\
+&=E_{s'}[R(s,a)+\gamma max_{a'\in A}Q(s',a')]
+\end{align*}
+and estimation may proceed through Stochastic Gradient Descent/Temporal Difference Learning, where $\hat{Q}_{\mbox{target}} = r_{s, a}^{obs} +\gamma max_{a'\in A}Q^{old}(s',a')$. We thus have below updating algorithm:
+
+\begin{align}
+Q(s,a)^{new} \leftarrow 
+Q(s,a)^{old} + \alpha [r + \gamma  max_a' Q(s',a')^{old} - Q(s,a)^{old} ]
+\label{eq:update}
+\end{align}
+
+where $\gamma \in (0, 1)$ denotes the discount factor, and $\alpha \in (0, 1)$ denotes the learning rate.
+
+\subsubsection{\textbf{Tunning Policy Flexibility: State Space Preprocessing}}
+
+\underline{Dimension Reduction}
+
+Due to the continous and high-dimensional nature of original $\Ssc$, it is essential to identify $\Ssc_p$ a minimal-information-loss projection of $\Ssc$ in discrete, lower dimensional space. Specifically, we impose below criteria for our projection $s_p \in \Ssc_p$:
+\begin{enumerate}
+\item $\Ssc_p$ contains maximal possible information from $\Ssc$ for the purpose of optimizing $\bQ$, \\ i.e. $\inf |Q(s, a) - \hat{Q}(s_p, a)| < \epsilon$
+\item $\Ssc_p$ reasonably satisfies markov assumption, i.e. $P(s_{p,t+1}|s_{p,t}, a_{t}) = P(s_{p, t+1}| \{s_{p, i}\}_{i=1}^t, \{a_{p, i}\}_{i=1}^t )$
+\end{enumerate}
+
+Although above criteria are difficult to verify theoretically, they did provide some intuitive guidance in terms of selecting minimal-information-reduction transformation of $\Ssc$. Specifically, consider the 6 axises of $\Ssc$:
+
+$$\begin{bmatrix}
+Tree_{\mbox{dist}} & Tree_{\mbox{top}} & Tree_{\mbox{bot}} &
+Monkey_{\mbox{vel}} & Monkey_{\mbox{top}} & Monkey_{\mbox{bot}}
+\end{bmatrix} $$
+
+If assuming the length of 
+$
+\left\{\begin{matrix}
+\mbox{Tree Gap} \quad\qquad = & Tree_{\mbox{top}} - Tree_{\mbox{bot}}
+\\ 
+\mbox{Monkey Height} = & Monkey_{\mbox{top}} - Monkey_{\mbox{bot}}
+\end{matrix}\right.
+$ are fixed, we may discard (WLOG) all the "top" statistic since they are linearly dependent of all the "bottom" statistics. Furthemore, since the primary goal of the game is passing tree gaps, agent should focus primarily on its relative distance from the tree gap. Thus if denote:
+\begin{alignat*}{3}
+&  X && = Tree_{\mbox{dist}}
+\qquad &&
+\mbox{Relative distance, horizontal}
+\\
+&  Y && = Tree_{\mbox{bot}} - Monkey_{\mbox{bot}}
+\qquad &&
+\mbox{Relative distance, vertical}
+\\
+& V && = Monkey_{\mbox{vel}}
+\qquad &&
+\mbox{Relative distance, speed of change}
+\end{alignat*}
+we may define $s_p = (X, Y, V)$ which encodes the maximal possible information on monkey's relative distance from tree gap. $s_p$ also intuitively fits the markov assumption since from Physics the "flying" objects' movement in space depends on its current position, speed, and gravity (which is an constant). Note although $Monkey_{\mbox{bot}}$ is linearly independent from $s_p$, we consider it not crucial in terms of providing information on agent's relative distance from tree gap, and hence decide to not include $Monkey_{\mbox{bot}}$ in $s_p$.\\
+
+\underline{Discretization}
+
+Discretization of $\Ssc_p$ is necessary due to the fact that Q-learning operates on a finite-dimensional $\bQ$ matrix, which impacts the performance of the agent due to the trade-off between computation complexity and policy flexibility: while refined grid allow flexible policy which detects tiny but crucial changes in original state space, it also generates a huge $\Ssc_p$ which takes long time to explore and converge. On the other hand, coarse grid generates a small $\Ssc_p$ that can be well explored in short time, the algorithm may converge to an inflexible and sub-optimal policy.
+
+To assess the impact of partitioning on agent performance, we fixed the grid size of speed space ($V$) to be 20, and tried two different grid sizes for the spatial state space $(X, Y)$: $50 \times 50$ and $25 \times 25$ grid. The $50 \times 50$ grid is approximately identical to the size of the monkey, which will result in a slightly coarse but reasonable partition of spatial state space. The $25 \times 25$ grid (as shown in Figure \ref{fig:part_initial}) is selected based on the fact that the estimated speed of the monkey's horizontal movement is 25 pxl/game loop, which represents the finest possible partition of (at least) $X$ space.
+
+\begin{figure}[h!]
+  \centering
+      \includegraphics[width=0.8\textwidth]{"./plots/s_scatter"}
+  \caption{Initial Partition of State Space, $25 \times 25$ grid}
+  \label{fig:part_initial}
+\end{figure}
+
+\subsubsection{\textbf{Tunning convergence speed: $\alpha$, $\gamma$ and $\epsilon$}}
+
+Aside from the discretization of $\Ssc$, three native parameters of Q-learning: learning rate ($\alpha$), discount rate ($\gamma$) and the $\epsilon$-greedy factor also impacts algorithm performance in terms of convergence rate. Recall that Q-learning has the following two theoretical properties:
+\begin{enumerate}
+	\item [i] If every state-action pair(s,a) is visited an unbounded number of times and the learning rate $\alpha$ is "eventually small enough" then the Q-values converge to the limit.
+	\item [ii] If we exploit the Q-values in the limit, then the policy converges to the optimal policy in the limit.
+\end{enumerate}
+
+In order to achieve these two requirements, we define the distinct learning rate for each state/action pair and have that rate be $\alpha_k(s,a)=1/k(s, a)$ where k is the number of times action $\alpha$ has been taken from state s. We also set $\gamma = 0.9$ since the game mechanism is time-stationary and a high discount factor should not "unlearn" previous state-action encounters that quickly. The specification of $\alpha$ and $\gamma$ are fixed in our implementation since they do not seem to greatly impact agent performance during trial runs.
+
+We also adopt the $"\varepsilon-greedy"$ policy that the optimal action is taken with probability $1-\varepsilon$, but with probability $\varepsilon$, a uniformly random action is taken to induce exploration. However, in constrast to use $\epsilon = \frac{1}{epoch}$ as introduced in lecture notes, 
+we took $\varepsilon(s, a)=e/k(s, a)$, where e (set at 0.001) is the "base $\epsilon$ factor" which affects the initial exploration probability. This exploitation v.s. exploration policy is state-action dependent so that it encourage the agent to explore new actions in new states even if it has already experienced many epoches, we also change $e$ to smaller values due to the fact the agent need to survive long enough in each game run so it can sufficiently explore each game state.
+
+\subsection{\textbf{Performance Evaluation}}
+As shown in (\ref{eq:metric0}), our theoretical metric is $E \Big( \sum_{s \in \bp} R(s, \pi(s)) \Big| \bp \Big)$, the expected total reward in a game run. However, as shown in Figure \ref{fig:part_initial} and will be explained Result section, our implemented agent rarely hits screen edge and receives only the $tree\_hit$ type penalty. It is thus reasonable to approximate (\ref{eq:metric0}) using the aerage total score over repeated game runs. Specifically, as always used in MCMC approach, we evaluate the agents' policy quality and convergence behavior by considering its running average score of the 1000 most recent game runs (denoted as $\overline{Score}$):
+\begin{align*}
+\overline{Score}_i &= \frac{1}{1000}\sum_{k=i-1000}^i \Big[  \sum_{s \in \bp_k} R(s, \pi(s)) \Big]
+\end{align*}
+
+\section{\textbf{Result}}
+\subsection{\textbf{Initial Run}}
+The state travelled by agent (black dots) and state when agent fail (red dots) are shown in Figure \ref{fig:part_initial} and \ref{fig:part_initial2}. As displayed in Figure \ref{fig:part_initial}, the agent fail primarily when hitting the top and lower trunk either before or during passing the tree gaps. We also see in Figure \ref{fig:part_initial2}  (Right) that the agent fail mostly when their vertical speed is too high/low, indicating lack of speed control possibly when close to tree. We also see that our partition of speed space is too coarse with respect to the actual speed distribution.
+
+\begin{figure}[!h]
+        \centering
+        \begin{subfigure}[b]{0.5\textwidth}
+                \includegraphics[width=\textwidth]{"./plots/v_hist0"}
+        \end{subfigure}%
+~
+        \begin{subfigure}[b]{0.5\textwidth}
+                \includegraphics[width=\textwidth]{"./plots/v_death_hist0"}
+        \end{subfigure}
+  \caption{Initial Partition of Speed State Space\\ \textbf{Left} Distribution of all speed state travelled \\
+  \textbf{Right} Distribution of speed state when death}
+  \label{fig:part_initial2}
+\end{figure}
+
+\subsection{\textbf{Second Run with Improved Grid}}
+In order to improve our discretization of the state-space, we analysed the distribution of states that agent had travelled during initial runs. Specifically, we calculated the multidimensional quantiles of the $(X, Y, V)$ space. As shown in Figure \ref{fig:part_initial2}, while the qantiles distributed evenly over X range, quantiles are closer to each other when approaching 0 for both Y and V, indicating higher frequency of these states, and potentially higher importance of decision made within such states. In light of this situation, we refined our grid size along Y and V axis by reducing spatial grid size to $25 \times 10$, and reducing speed grid size to 5.
+
+\begin{figure}[!h]
+        \centering
+        \begin{subfigure}[b]{0.3\textwidth}
+                \includegraphics[width=\textwidth]{"./plots/s_scatter_grid"}
+        \end{subfigure}%
+~
+        \begin{subfigure}[b]{0.3\textwidth}
+                \includegraphics[width=\textwidth]{"./plots/v_hist_grid"}
+        \end{subfigure}
+  \caption{Analysis and Improved Partition of State Space\\ 
+  \textbf{Left} Empirical joint quantile of spatial state space \\
+  \textbf{Right} Empirical joint quantile of speed state space}
+  \label{fig:part_initial2}
+\end{figure}
+
+\subsection{\textbf{Convergence Behavior and Resulting Policy}}
+The running $\overline{Score}$ for three grid sizes used are displayed as in Figure \ref{fig:Result}(Left). As shown in , while coarse grid size ($50 \times 50$) converged quickly before 1000 iterations, it stucked at a consistently lower range. Comparatively, finer grid size shows slower convergence, with $25 \times 25$ grid stabled at around 375.2 after 5000 iterations, while $25 \times 10$ grid still shows improvement. The observed score per play of $25 \times 10$ grid size is shown on right. As shown, we can observe extremely large score variation between plays, with high score at around 3900 and low score at 0 even when mean score is at around 500.
+
+\begin{figure}[!h]
+        \centering
+        \begin{subfigure}[b]{0.5\textwidth}
+                \includegraphics[width=\textwidth]{"./plots/peformance"}
+        \end{subfigure}%
+        ~
+        \begin{subfigure}[b]{0.5\textwidth}
+                \includegraphics[width=\textwidth]{"./plots/observed"}
+        \end{subfigure}
+  \caption{Observed (\textbf{Left}) and Running Mean (\textbf{Right}) of scores per play\\ 
+  \textbf{Right} Observed Score of Improved Grid \\
+  \textbf{Left} Running Mean of Initial and Improved Grid }
+  \label{fig:Result}
+\end{figure}
+
+Finally, the policy generated by the $25 \times 10$ grid agent is shown in Figure \ref{fig:meandecision}, with hue level (more red) indicating higher chance of pushing "Jump". As shown, the agent did learn a reasonable policy that coincides with human intuition. It tends to jump when lower than tree gap, do not jump when far from tree and at the same horizontal level as tree gaps, and jump occasionally during or right after passing tree gap so it keeps flying. We are not able to explain why the agent still tends to jump when it is close to tree and higher than tree trunk, which is possibly the result of insufficient experience (hence not yet converged Q values) in these states. 
+
+\begin{figure}[h!]
+  \centering
+      \includegraphics[width=0.8\textwidth]{"./plots/meanDecision"}
+  \caption{Mean Decision over Spatial States}
+  \label{fig:meandecision}
+\end{figure}
+
+
+
+\newpage
+\section*{\textbf{Reference}}
+\begin{enumerate}
+\item \label{ref:handbook}
+Moerman W, Bakker B, Wiering M. (2009) \textbf{Hierarchical Assignment of Behaviours to Subpolicies}. \textit{Cognitive Artificial Intelligence, Utrecht University}. 
+\item \label{ref:MFieee}
+Aljibury H. (2001) \textbf{Improving the Performance of Q-learning with Locally Weighted Regression}. \textit{Electrical Engineering, University of Florida}. 
+\item \label{ref:WLA}
+Smart W,  Kaelbling L.(2003) \textbf{Weighted low-rank approximations}. \textit{Proceedings of the Twentieth International Conference} 720–727.
+\end{enumerate}
+
+\end{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

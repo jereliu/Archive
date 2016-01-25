@@ -1,0 +1,13 @@
+\BOOKMARK [1][-]{section.1}{Exploratory Analysis}{}% 1
+\BOOKMARK [1][-]{section.2}{A Collaboration-Filtering-based Approach}{}% 2
+\BOOKMARK [2][-]{subsection.2.1}{Background}{section.2}% 3
+\BOOKMARK [2][-]{subsection.2.2}{SVD Model}{section.2}% 4
+\BOOKMARK [2][-]{subsection.2.3}{SVD ++ Model}{section.2}% 5
+\BOOKMARK [2][-]{subsection.2.4}{Fused item-item user-user model}{section.2}% 6
+\BOOKMARK [2][-]{subsection.2.5}{Parameter selection}{section.2}% 7
+\BOOKMARK [1][-]{section.3}{Results}{}% 8
+\BOOKMARK [1][-]{section.4}{Discussion}{}% 9
+\BOOKMARK [2][-]{subsection.4.1}{Probabilistic Matrix Factorization \(PMF\)}{section.4}% 10
+\BOOKMARK [2][-]{subsection.4.2}{Automatic Complexity Control for PMF}{section.4}% 11
+\BOOKMARK [2][-]{subsection.4.3}{Constrained PMF}{section.4}% 12
+\BOOKMARK [1][-]{section.5}{Reference}{}% 13

@@ -1,0 +1,414 @@
+\documentclass[11pt]{article}
+
+%formating author affiliation
+\usepackage{authblk}
+\author[1]{(Vivian) Wenwan Yang}
+\author[2]{Jing Wen}
+\author[2]{(Jeremiah) Zhe Liu}
+\affil[1]{Department of Computational Science and Engineering, SEAS}
+\affil[2]{Department of Biostatistics, Harvard School of Public Health}
+
+% change document font family to Palatino, and code font to Courier
+\usepackage{mathpazo} % add possibly `sc` and `osf` options
+\usepackage{eulervm}
+\usepackage{courier}
+%allow formula formatting
+
+%identation in nested enumerates
+\usepackage[shortlabels]{enumitem}
+\setlist[enumerate,1]{leftmargin=1cm} % level 1 list
+\setlist[enumerate,2]{leftmargin=2cm} % level 2 list
+
+%flush align equations to left, this also loads amsmath 
+%\usepackage[fleqn]{mathtools}
+\usepackage{mathtools}
+\usepackage{amsthm}
+\DeclareMathAlphabet\mathbfcal{OMS}{cmsy}{b}{n}
+\usepackage{comment}
+
+%declare math symbolz
+%# inner product
+\DeclarePairedDelimiter{\inner}{\langle}{\rangle}
+
+%declare argmin
+\newcommand{\argmin}{\operatornamewithlimits{argmin}}
+
+%declare checkmark
+\usepackage{pifont}% http://ctan.org/pkg/pifont
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}%
+
+%title positon
+\usepackage{titling} %fix title
+\setlength{\droptitle}{-6em}   % Move up the title 
+
+%change section title font size
+\usepackage{titlesec} 
+\titleformat{\section}
+  {\normalfont\fontsize{12}{15}}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\fontsize{12}{13}}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+  {\normalfont\fontsize{12}{13}}{\thesubsubsection}{1em}{}
+
+%overwrite bfseries to allow formula in section title  
+\def\bfseries{\fontseries \bfdefault \selectfont \boldmath}
+
+% change page margin
+\usepackage[margin=0.8 in]{geometry} 
+
+%disable indentation
+\setlength\parindent{0pt}
+
+%allow inserting multiple graphs
+\usepackage{graphicx}
+\usepackage[skip=1pt]{subcaption}
+\usepackage[justification=centering,font=small]{caption}
+\newcommand{\indep}{\rotatebox[origin=c]{90}{$\models$}}%indep sign
+
+%allow code chunks
+\usepackage{listings}
+%\lstset{basicstyle=\footnotesize\ttfamily,breaklines=true}
+\lstset{basicstyle=\footnotesize\ttfamily,breaklines=true}
+\lstset{frame=lrbt,xleftmargin=\fboxsep, xrightmargin=-\fboxsep}
+\lstset{language=R, commentstyle=\bfseries, 
+keywordstyle=\ttfamily} %R-related formatting
+\lstset{escapeinside={<@}{@>}}
+
+%allow merged cell in tables
+\usepackage{multirow}
+
+%allow http links
+\usepackage{hyperref}
+
+%allow different font colors
+\usepackage{xcolor}
+
+%Thm and Def environment
+\theoremstyle{definition}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+
+\newenvironment{definition2}[1][Definition]{\begin{trivlist} %def without index
+\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+
+\newenvironment{example}[1][Example]{\begin{trivlist} %def without index
+\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+
+
+%macros from Bob Gray
+\usepackage{"./macro/GrandMacros"}
+\usepackage{"./macro/Macro_BIO235"}
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% TItle page with contents %%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{\textbf{CS 181 Machine Learning}\\ 
+\textbf{Practical 3 Report, Team \textit{Deep Ellum}}}
+
+\pretitle{\begin{centering}\Large}
+\posttitle{\par\end{centering}}
+
+\date{\today}
+\vspace{-10em}
+\maketitle
+\vspace{-2em}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% Formal Sections %%%%% %%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{\textbf{Exploratory Analysis}}\label{sec:EDA}
+
+The training dataset features the gender, age, and country of origin of  233286 users, as well as their count of plays of tracks from 2000 artists.  The current objective is to predict the unobserved count of plays for user-artists pairs.
+
+The empirical distribution of number of artists listened (per user) and  number of users listened (per artists) are shown in Figure \ref{fig:freq}. As shown, the data exhibits extremely sparse structure, with each user listening to only 5-50 out of artistis, and each artists were listened by at most 35000 out of 233286 users. Such sparsity in observation among the entrire user-artist count space will induce an user-artist count matrix with extremely sparse structure. Rendering traditional algorithms geared toward dense matrix with few missing data problematic.
+
+\begin{figure}[!h]
+        \centering
+        \begin{subfigure}[b]{0.3\textwidth}
+                \includegraphics[width=\textwidth]{"./plots/hist_arts"}
+                \caption{Number of Audience per Artist}
+        \end{subfigure}%
+        ~
+        \begin{subfigure}[b]{0.3\textwidth}
+                \includegraphics[width=\textwidth]{"./plots/hist_user"}
+                \caption{Number of Artist per Audience}
+        \end{subfigure}
+        \caption{Distribution of the number of audience per artist (\textbf{Left}) and the number of artist per audience (\textbf{Right})}
+        \label{fig:freq}
+\end{figure}
+
+The marginal distribution of listening counts among all user-artists pairs were also considered and shown in Figure \ref{fig:count}. As shown in the histogram (Left), the log-transformed listening counts displayed roughly symmetric distribution with long tails to the positive direction, which indicates severe right-skewness in the distribution of raw count, and also extreme-valued outliers in the positive direction. 
+
+\begin{figure}[!h]
+        \centering
+        \begin{subfigure}[b]{0.3\textwidth}
+                \includegraphics[width=\textwidth]{"./plots/hist_freq_log"}
+        \end{subfigure}%
+        ~
+        \begin{subfigure}[b]{0.3\textwidth}
+                \includegraphics[width=\textwidth]{"./plots/hist_freq_qq"}
+        \end{subfigure}
+        \caption{Histogram (Left) and Quantile plot (Right) of $log(\mbox{Play Count})$}
+        \label{fig:count}
+\end{figure}
+
+The distribution of outliers relative to the rest of the data is illustrated by the quantile plot of $log(\mbox{Play Count})$ (Figure \ref{fig:count}, right). As shown, while $99\%$ of the data remained below 8 on log scale (or $< 3000$ on original scale), the log count increased dramatically during the $0.99 - 1.00$ quntile range from 8 up to 13 (or from $\sim$3000 to $\sim$45000 on original scale), indicating a small amount ($<1\%$) extreme listening behaviors. An empirical check indicates such counts come from either an avaracious user with high total listening count, or a focused user who listens to primarily one or two musician, or the combination of the above two cases. Such situation calls for the need of normalization during modelling stage.
+
+\vspace*{2em}
+
+\section{\textbf{Method}}
+
+\subsection{\textbf{Rationale on Model Choice}}
+
+In previous section we have identified following characteristics of the  task at hand:
+
+\begin{enumerate}
+\item [$\bullet$] Information Available:
+\begin{enumerate}
+\item Basic Demographic covariates from User
+\item Large ($233286 \times 2000$) User-Artist count matrix, with extremely sparse entries
+\end{enumerate} 
+\item [$\bullet$] Data Distribution: Right-skewed distribution with extreme outliers
+\item [$\bullet$] Goal: Predict the unobserved play counts between  users/artists observed in training set, with mean absolute error (MAE) as outcome metric.
+\end{enumerate}
+
+Due to the lack of additional user/artist specific features, current task requires drawing inference on unobserved play counts using primarily observed counts, hence put the problem into the unsupervised setting.
+
+However, most of the traditional, distance-based techniques (e.g. K-means/nearest neighbors, PCA/SVD) fail in our setting due to the sparsity-induced difficulty in defining distance, i.e. there does not exist a set of musician who are listened by most of the users. Yet imputation is intractable as it significantly increases the amount of data. In addition, the data may be considerably distorted due to inaccurate imputation.
+
+Given such sitation, we choose to adopt a matrix-factorization approach to model directly only the observed play counts. Shown to be particularly effective in the famous Netflix competition [\ref{ref:MFieee}], if denote the $(i, j)^{th}$ entry of the count matrix as $r_{i,j}$, such methods simulates the reconstructive view of traditional PCA approach by modelling the counts as:
+$$r_{ij} = \mu_{ij} + \bq_i^T \bp_j$$
+where $\bp$ and $\bq$ are $f \times 1$ vectors which corresponds to the eigenvalue/vector in traditional PCA, and has the interpretation of "latent factors" which we will explain further in the following section. We see that since modelling is proceeded with an element-wise fashion, hence allowing us to consider only the observed entry in the count matrix. 
+
+In the next section, we present our implementation of this method. We will show how elements of above model is defined and interpreted in our current problem, and how to better model $(\mu_{ij}, \bq_i, \bp_j)$ by refining their structure and incorporate user-specific demographic informations. Furthermore, since such modification to PCA results in a difficult non-convex optimization problem [\ref{ref:WLA}], we also discuss practical issues in the estimation of $(\mu_{ij}, \bq_i, \bp_j)$, where a well-initiated stochastic gradient descent on normalized play counts seem to work reasonably well in our setting.
+
+\newpage
+
+\subsection{\textbf{Model Definition and Interpretation}}
+
+For each user $u$ and artist $i$, we assume:
+\begin{align}
+\mbox{count}_{ui} &\sim Poisson(r_{ui}) \nonumber \\
+r_{ui} & = \mu_{ui} + \bq_i^T \bp'_u \label{eq:original model}
+\end{align}
+
+where $r_{ui}$ measures the underlying "mean" preference by user \textit{u} of artist \textit{i}, where high values indicate stronger preference. \\
+
+\underline{Modeling Systematic Preference}
+
+The parameter $\mu_{ui}$ measures the "baseline preference" that capture, relative to the population mean count (denoted as $\mu$), the systematic tendencies for some artists to receive more numbers of plays than others (denoted as \textit{artist-specific bias}, $b_i$), and for some users to play more often than others (denoted as \textit{user-specific bias}, $b_u$). We also believe that the user-specific demographic information (Age, Gender, Country) would help explaining the user-specific tendency, which lead to below refinement of $\mu_{ij}$:
+\begin{align}\label{eq:bias model}
+\mu_{ui} = \mu + b_\mu + b_i + \beta_1\mbox{Gender} + \beta_2\mbox{Country} +  \beta_1\mbox{Age} 
+\end{align}
+
+\underline{Modeling User Preference}
+
+The pair $(\bq_i, \bp'_u) \in \mathbb{R}^f \times \mathbb{R}^f$  indicates latent characteristics of artist \textit{i} that is not explicitly measured ($\bq_i$), and user \textit{u}'s preferences for these latent factors ($\bp'_u$). For example, these latent factors might measure obvious dimensions such as genre and style; less well defined dimensions such as depth of the lyrics or structure of rhythm patterns; or completely uninterpretable dimensions. Hence the dot product, $\bq_i^T \bp'_u$ represents the interaction between artist \textit{i} and user \textit{u}, where high values mean stronger overall interest of the user in the artist's characteristics. In addition, the user preference $\bp'_u$ can be further augmented by recognizing the fact that the user \textit{u} had expressed "implicit" preference to musician \textit{i} just by listening to this musician. This idea is formalized in Koren (2008) [\ref{ref:implicit}] and leads to below refinement of $\bp'_u$:
+\begin{align}\label{eq:preference model}
+\bp'_u = \bp_{u}+|R(u)|^{-\frac{1}{2}} \sum_{j \in R(u)} \by_j
+\end{align}
+where $R(u)$ indicates the set of artists listened by user \textit{u}, and $\by_j \in \mathbb{R}^f$ measures the aforementioned "implicit" preference. \\
+
+Combine (\ref{eq:original model}), (\ref{eq:bias model}), (\ref{eq:preference model}), we have reached below prediction rule:
+\begin{align*}
+\hat{r}_{ui} = E(\mbox{count}_{ui}) = 
+\Big[ \mu + b_\mu + b_i + \beta_1\mbox{Gender} + \bbeta_2\mbox{Country} +  \beta_3\mbox{Age}  \Big] + 
+\bq_i^T \Big(\bp_u+|R(u)|^{-\frac{1}{2}} \sum_{j \in R(u)}\by_j \Big)
+\end{align*}
+In practise, however, we discarded the \textbf{Age} covariate due to high amount of missing/erroneous entries, and heuristically grouped \textbf{Country} into 8 continent-based categories\footnote{Continent = \{ Northern  Europe, Europe, Africa, Middle East, South/Central Asia, East Asia, North America, South America \}} in order to reduce model dimension: 
+\begin{align}
+\hat{r}_{ui} = E(\mbox{count}_{ui}) = 
+\Big[ \mu + b_\mu + b_i + \beta_1\mbox{Gender} + \beta_2\mbox{Continent} \Big] + 
+\bq_i^T \Big(\bp_u+|R(u)|^{-\frac{1}{2}} \sum_{j \in R(u)}\by_j \Big)
+\label{eq:final model}
+\end{align}
+
+
+\subsection{\textbf{Estimation}}\label{sec:estimation}
+
+ In order to estimate ($\bb = \{\bb_u,\bb_i\}$, $\bbeta = \{\beta_1, \beta_2\}$, $\{\bp_u, \bq_i\}$, $\by$), we chose to optimize on $L_2$ loss due to the availability of convience algorithm (stochastic gradient descent). A naive objective function for (\ref{eq:final model}) would be:
+
+$$\min_{\bb, \bq,\bp, \bbeta, \by} 
+\sum_{(u, i) \in \Ksc} (r_{ui} - \hat{r}_{ui})^2$$
+
+However, notice that such approach will result in an unidentifiable model, since the solutions for $ b_\mu + b_i $ and the inner product $\bq_i^T \Big(\bp_u+|R(u)|^{-\frac{1}{2}} \sum_{j \in R(u)}\by_j \Big)$ are not unique. However, since the goal is to predict unobserved play count, it is essential to reasonably model the latent variables ($\bb$, $\{\bp_u, \bq_i\}$) within their plausible range, we hence place $L_2$ penalty on their norm:
+
+$$\min_{\bb, \bq,\bp, \bbeta, \by} \sum_{(u, i) \in \Ksc} (r_{ui} - \hat{r}_{ui})^2 + \lambda \Big(b_i^2 + b_u^2 + ||q_i||^2 + ||p_u||^2 +|R(u)|^{-\frac{1}{2}} \sum_{j \in R(u)}\by_j \Big)$$
+
+A straightforward stochastic gradient descent hence follows. The optimization involves the algorithm which loops through all numbers of plays in our training data. Denoting $e_{ui} = r_{ui} - \hat{r}_{ui}$ the associated prediction error, and $\gamma$ the step size in each gradient descent step, we move in the opposite direction of the gradient by modifying parameters as follows:
+
+\begin{enumerate}
+\item $\bbeta \leftarrow \bbeta + \gamma \cdot e_{ui} \cdot \bx
+\qquad $ where $\bx$ the $9 \times 1$ vector indicating user's gender and continent
+  \item $b_u \leftarrow b_u+\gamma \cdot(e_{ui}-\lambda \cdot b_u)$
+  \item $b_i \leftarrow b_i +\gamma \cdot (e_{ui}-\lambda \cdot b_i)$
+  \item $\bq_i \leftarrow \bq_i + \gamma \cdot(e_{ui}\cdot (\bp_u + |R(u)|^{-\frac{1}{2}}\sum_{j \in R(u)}\by_j)- \lambda*\bq_i)$
+  \item $\bp_u \leftarrow \bp_u + \gamma \cdot(e_{ui}\cdot \bq_i - \lambda*\bp_u)$
+  \item $\forall  j \in R(u)$:
+  
+  $\by_j \leftarrow \by_j+\gamma \cdot(e_{ui} \cdot|R(u)|^{-\frac{1}{2}} \cdot \bq_i - \lambda_6 \cdot \by_j)$
+\end{enumerate}
+
+
+\subsection{\textbf{Numerical Challenges \& Further Modification}}
+
+\subsubsection{Normalization}
+
+As noted in Section \ref{sec:EDA}, the distribution of play counts features extreme outliers (maximum play counts: 419157), which consequently leads to unstable performance of the gradient descent steps. Specifically, an unusually large play counts will led to large $e_{ui}$, which may led to an usually large updating step thus leading to overshooting issues. In practice, since the $e_{ui}$ is shared by all parameters, the issue of overshooting will quickly propagate as the algorithm loop over all observed counts, and led to {\tt Inf} estimates by the end of iteration 1. We hence decide to optimize on the probability of each user listen to a specific musician, and use the total play count of this user as a weight vector in optimization, i.e. for user \textit{u} and R(\textit{u}) the set of musician listened by user \textit{u}, we have:
+\begin{align*}
+w^0_{u} &= \sum_{i \in R(u)} r_{ui}\\
+p_{ui} &= \frac{r_{ui}}{\sum_{i \in R(u)} r_{ui}}
+\end{align*}
+Note since only the relative ratio between $w_{u0}$'s matters in the optimization procedure, we may further normalize $\bw^0 = \{w^0_{1}, \dots, w^0_{233286}\}$ by its standard error, i.e. $w_u = w^0_{u}/\sigma_{\bw^0}$.
+
+Thus our prediction rule and objective function becomes:
+\begin{align*}
+\hat{r}_{ui} = \sigma_{\bw^0}*w_u*\hat{p}_{ui} &= 
+\sigma_{\bw^0}*w_u*
+\Bigg\{ 
+\Big[ \mu + b_\mu + b_i + \beta_1\mbox{Gender} + \beta_2\mbox{Continent} \Big] + 
+\bq_i^T \Big(\bp_u+|R(u)|^{-\frac{1}{2}} \sum_{j \in R(u)}\by_j \Big)
+\Bigg\}
+\\
+\min_{\bb, \bq,\bp, \bbeta, \by} & \sum_{(u, i) \in \Ksc} w_u * (p_{ui} - \hat{p}_{ui})^2 + \lambda \Big(b_i^2 + b_u^2 + ||\bq_i||^2 + ||\bp_u||^2 +|R(u)|^{-\frac{1}{2}} \sum_{j \in R(u)}\by_j \Big)
+\end{align*}
+
+Given the non-convex nature [\ref{ref:WLA}] of our current problem, it is important to initialize our algorithm the closest possible to the theoretical  global minimum. In our implementation, we choose to initialize on user-specific median. Operationally, if denote the median play count for user \textit{u} as $m_u$, and global median as $m$. For all observed $(u, i, j)$ combination, we initialize $(\mu, \bb, \bbeta, \{\bq, \bp\}, \by)$ as:
+\begin{align*}
+\mu &= m, \quad b_u = m_u - m \\
+b_i &= \beta_1 = \beta_2 = 0\\
+\bq_i &= \bp_u = \by_j = \textbf{0}
+\end{align*}
+
+Thus if properly tuned, in the worst case, the algorithm is expected to converge at a local minimum that is at as bad as user-specific median.
+
+\subsubsection{Parameter Selection}
+
+In our current implementation, two parameters $(\lambda, f)$ appeared to have non-trivial influence on model fit. Specifically, $\lambda$ determines the upper bound of the square norm of our latent factors $(\bb, \bbeta, \{\bq, \bp\}, \by)$. While a small $\lambda$ will lead to ill-identified latent factors with arbitrarily large value as discussed in Section \ref{sec:estimation}, large $\lambda$ will bound all latent factors toward 0 and reduce our model estimates to a global median. 
+
+$f$ indicates the dimension of latent factors. While a growing number of factor dimensions enables the model to better express complex user- artist interactions, a overly high dimension may lead to the issue of overfitting, hence reduced prediction accuracy. According to recommendation from Koren and Bell [\ref{ref:handbook}](Chapter 3), for Netflix data, best predictin performance of the implicit preference augmented model is achieved at $\lambda = 0.02, f = 200$. Since the user rating in Netflix is in the scale of $0-5$ and our listening probability $p_{ui}$ ranges between $[0, 1]$, we slightly downscale $\lambda$ accordingly. As a result, we decide to search for the optimal combination in the joint parameter space $(\lambda, f) \in L \times F$, where $L = [ 0.004, 0.020] $ and $F = \{10, 20, 50, 100, 150, 200\}$. 
+
+If define MAE as $MAE = \sum_{(u, i)} |r_{ui} - \hat{r}_{ui}|/N_{users}$, our results is shown in Table \ref{tb:MAE} and Figure \ref{fig:MAE}. As shown, it appears the optimal MAE is achieved at $(\lambda = 0.004, f = 100)$, with MAE$ = 2202.33$. outperforming the user median estimates ($MAE \approx 2307.06$).
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{ccccccc}
+  \hline
+$\lambda$ / $f$ & 10 & 20 & 50 & 100 & 150 & 200 \\ 
+  \hline
+0.004 & 4500.41 & 2499.81 & 2298.69 & 2202.33 & 2798.67 & 2951.46 \\ 
+  0.008 & 3750.61 & 2950.56 & 2400.06 & 2350.54 & 2400.62 & 2850.97 \\ 
+  0.012 & 3001.39 & 2599.22 & 2970.77 & 2450.32 & 2501.98 & 2450.26 \\ 
+  0.016 & 2250.06 & 2499.30 & 2700.20 & 3001.74 & 2699.39 & 2549.48 \\ 
+  0.020 & 2398.99 & 2147.78 & 2598.63 & 2900.39 & 3100.31 & 2800.54 \\ 
+   \hline
+\end{tabular}
+\caption{Model MAE under ($\lambda$, $f$) $\in L \times F$}
+\label{tb:MAE}
+\end{table}
+
+\begin{figure}[!h]
+        \centering
+        \includegraphics[width=0.5\textwidth]{"./plots/parameter"}
+        \caption{MAE with respect to $\lambda$ and $f$}
+        \label{fig:MAE}
+\end{figure}
+
+
+\newpage
+\section{\textbf{Discussion \& Possible Directions}}
+
+Given our current implementation, authors believe that we have achieved maximum usage of information available in training data. However, due to time and resource contraint, we were not able to attempt all planned implementations. Specifically, we find below ideas potentially promising and decribe them as below:
+
+\subsection{Optimize on Absolute Error through Linear Programming}
+
+If minimize $MAE = \sum_{(u, i)} |r_{ui} - \hat{r}_{ui}| + \lambda \Big(b_i^2 + b_u^2 + ||\bq_i||^2 + ||\bp_u||^2 +|R(u)|^{-\frac{1}{2}} \sum_{j \in R(u)}\by_j \Big)$, we may convert them into below linear programing problem:
+\begin{alignat*}{3}
+&\mbox{minimize} &&\qquad \sum_{(u, i)} t_{ui} +\lambda \Big(b_i^2 + b_u^2 + ||\bq_i||^2 + ||\bp_u||^2 +|R(u)|^{-\frac{1}{2}} \sum_{j \in R(u)}\by_j \Big)\\
+&\mbox{subject to} &&\qquad r_{ui} - \hat{r}_{ui} \leq t_{ui}\\
+& &&\qquad r_{ui} - \hat{r}_{ui} \geq -t_{ui}
+\end{alignat*}
+
+If set $\lambda = 0$ (i.e. no penalization), such problem can be solved by simplex methods such as Barrodale-Roberts algorithm. However, it is yet not clear if the penalized can solved in a similar way, or if such implementation exists in Python.
+
+\subsection{Alternative Objective Function through Hierarchical Model}
+
+Due to the nature of play counts, we may pursue a more statistics-oriented approach through an Hierarchical structure (denote $\btheta =  \{\bb, \bbeta, \{\bp_u, \bq_i\}, \by\}$) as:
+\begin{align*}
+\mbox{count}_{u} &\sim Pois(r_{ui} | i \in R(u)) 
+\qquad \mbox{where } Pois \mbox{ is a Poisson Process}
+\nonumber \\
+r_{ui} & = E(\mbox{count}_{ui}|\bx, \btheta) = \Big[ \mu + b_\mu + b_i + \beta_1\mbox{Gender} + \beta_2\mbox{Continent} \Big] + 
+\bq_i^T \Big(\bp_u+|R(u)|^{-\frac{1}{2}} \sum_{j \in R(u)}\by_j \Big)
+\end{align*}
+
+We may assume conditional exchangeability among $\mbox{count}_{ui}$ observations conditional on the user/artist specific parameters. If given enough thoughts, we should be able to develope a likelihood-based loss based on above construction, with possibility of incoporating Dirichlet Process ideas (since the probability for a user to listen to a specific musician can be considered as an 200d multinomial distribution ) and it would be interesting to see if such methods offers better performance. (However, another Bayesian-based idea is formalized in below section)
+
+\subsection{Probabilistic Matrix Factorization (PMF)}
+The deterministic factoring algorithms described above may not be  successful to model the number of plays, as the existing algorithms have trouble making accurate predictions for users with very few plays. Alternatively, probabilistic algorithms that scale linearly with the number of observations have been proved to perform well on very sparse and imbalanced datasets, such as our Streaming Music dataset.
+
+
+Denote the number of plays of user \textit{u} for artist \textit{i} by $R_{ui}$. Suppose we have \textit{M} artists and \textit{N} users. Let $U \in R^{D*N}$ and $V \in R^{D*M}$ be latent user and artist feature matrices, with column vectors $U_u$ and $V_i$ representing user-specific and artist-specific latent feature vectors respectively. We can define the conditional distribution over the observed numbers of plays as
+
+$$p(R|U, V, \sigma^2) = \prod_{u=1}^{N} \prod_{i=1}^M \Big[\Nsc(R_{ui}|U_u^TV_i,\sigma^2) \Big]^{I_{ui}}$$
+
+
+where $\Nsc(x|\mu,\sigma^2)$ represents the probability density function of the Gaussian distribution with mean $\mu$ and variance $\sigma^2$, and $I_{ui}$ is the indicator function that is equal to 1 if user \textit{u} listened to the track from artist \textit{i} and equal to 0 otherwise. We also place zero-mean spherical Gaussian priors on user and artist feature vectors:
+$$p(U|\sigma_U^2) = \prod_{i=1}^N \Nsc(U_u|0,\sigma_U^2 I), \qquad 
+p(V|\sigma_V^2)  = \prod_{j=1}^M \Nsc(V_i|0,\sigma_V^2 I)$$
+
+The log of the posterior distribution over the use and the artist feature is:
+
+\begin{align*}
+ln{\it{p}}(U,V|R,\sigma^2,\sigma_V^2,\sigma_U^2) =& 
+-\frac{1}{2\sigma^2}\sum_{u=1}^N \sum_{i=1}^M I_{ui}(R_{ui} - U_u^TV_i)^2
+-\frac{1}{2\sigma_U^2} \sum_{u=1}^N U_u^TU_u-\frac{1}{2\sigma_V^2}\sum_{i=1}^M V_i^TV_i 
+\\
+& -\frac{1}{2} \Big( \Big(\sum_{u=1}^N\sum_{i=1}^M I_{ui} \Big) ln\sigma^2 + NDln\sigma_U^2 + MDln\sigma_V^2 \Big) + C
+\end{align*}
+
+Maximizing the above log-posterior over artist and user features is equivalent to minimizing the below sum-of-squared-errors objective function:
+$$E = \frac{1}{2}\sum_{u=1}^N \sum_{i=1}^M I_{ij}(R_{ij}-U_i^TV_j)^2 + \frac{\lambda_U}{2} \sum_{i=1}^N ||U_u||_{Fro}^2 + \frac{\lambda_V}{2} \sum_{i=1}^M||V_j||_{Fro}^2$$
+
+where $\lambda_U = \sigma^2 / \sigma_U^2$, $\lambda_V = \sigma^2 / \sigma_V^2$, and $||\cdot||_{Fro}^2$ represents the Frobenius norm. This model is a probabilistic extension of the SVD model, since the objective function reduces to the SVD objective in the limit of prior variances going to infinity.
+
+Additionally, the PMF offers other desirable extensions such as automatic complexity control through spherical prior on user and artist feature vectors. Unfortunately, current implementation is available only in Matlab.
+
+
+\newpage
+\section*{\textbf{Reference}}
+\begin{enumerate}
+\item \label{ref:handbook}
+Ricci F, Rokach L, Shapira B et al. (2010) \textbf{Recommender Systems Handbook}. \textit{Springer}. 
+\item \label{ref:MFieee}
+Koren Y, Bell R, Volinsky C. (2009) \textbf{Matrix factorization techniques for recommender systems}. \textit{IEEE Computer} Aug 2009, 42-49. 
+\item \label{ref:WLA}
+Srebro N,  Jaakkola T.(2003) \textbf{Weighted low-rank approximations}. \textit{Proceedings of the Twentieth International Conference} 720–727.
+\item \label{ref:PMF}
+R Salakhutdinov, A Mnih. (2008) \textbf{Probabilistic Matrix Factorization}. \textit{Advances in Neural Information Processing Systems} Vol. 20
+
+\item \label{ref:implicit}
+Koren, Y. (2008) \textbf{Factorization Meets the Neighborhood: a Multifaceted Collaborative Filtering Model}, \textit{Proc. 14th ACM SIGKDD International Conference on Knowledge Discovery and
+Data Mining}.
+
+\end{enumerate}
+
+\end{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

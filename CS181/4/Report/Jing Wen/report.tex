@@ -1,0 +1,295 @@
+\documentclass[11pt]{article}
+
+%formating author affiliation
+\usepackage{authblk}
+\author[1]{(Vivian) Wenwan Yang}
+\author[2]{Jing Wen}
+\author[2]{(Jeremiah) Zhe Liu}
+\affil[1]{Department of Computer Science, Harvard School of Engineering and Applied Sciences}
+\affil[2]{Department of Biostatistics, Harvard School of Public Health}
+
+% change document font family to Palatino, and code font to Courier
+\usepackage{mathpazo} % add possibly `sc` and `osf` options
+\usepackage{eulervm}
+\usepackage{courier}
+%allow formula formatting
+
+%identation in nested enumerates
+\usepackage[shortlabels]{enumitem}
+\setlist[enumerate,1]{leftmargin=1cm} % level 1 list
+\setlist[enumerate,2]{leftmargin=2cm} % level 2 list
+
+%flush align equations to left, this also loads amsmath 
+\usepackage[fleqn]{mathtools}
+\usepackage{amsthm}
+\DeclareMathAlphabet\mathbfcal{OMS}{cmsy}{b}{n}
+\usepackage{comment}
+
+%declare math symbolz
+%# inner product
+\DeclarePairedDelimiter{\inner}{\langle}{\rangle}
+
+%declare argmin
+\newcommand{\argmin}{\operatornamewithlimits{argmin}}
+
+%declare checkmark
+\usepackage{pifont}% http://ctan.org/pkg/pifont
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}%
+
+%title positon
+\usepackage{titling} %fix title
+\setlength{\droptitle}{-6em}   % Move up the title 
+
+%change section title font size
+\usepackage{titlesec} 
+\titleformat{\section}
+  {\normalfont\fontsize{12}{15}}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\fontsize{12}{13}}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+  {\normalfont\fontsize{12}{13}}{\thesubsubsection}{1em}{}
+
+%overwrite bfseries to allow formula in section title  
+\def\bfseries{\fontseries \bfdefault \selectfont \boldmath}
+
+% change page margin
+\usepackage[margin=0.8 in]{geometry} 
+
+%disable indentation
+\setlength\parindent{0pt}
+
+%allow inserting multiple graphs
+\usepackage{graphicx}
+\usepackage[skip=1pt]{subcaption}
+\usepackage[justification=centering,font=small]{caption}
+\newcommand{\indep}{\rotatebox[origin=c]{90}{$\models$}}%indep sign
+
+%allow code chunks
+\usepackage{listings}
+%\lstset{basicstyle=\footnotesize\ttfamily,breaklines=true}
+\lstset{basicstyle=\footnotesize\ttfamily,breaklines=true}
+\lstset{frame=lrbt,xleftmargin=\fboxsep, xrightmargin=-\fboxsep}
+\lstset{language=R, commentstyle=\bfseries, 
+keywordstyle=\ttfamily} %R-related formatting
+\lstset{escapeinside={<@}{@>}}
+
+%allow merged cell in tables
+\usepackage{multirow}
+
+%allow http links
+\usepackage{hyperref}
+
+%allow different font colors
+\usepackage{xcolor}
+
+%Thm and Def environment
+\theoremstyle{definition}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+
+\newenvironment{definition2}[1][Definition]{\begin{trivlist} %def without index
+\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+
+\newenvironment{example}[1][Example]{\begin{trivlist} %def without index
+\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+
+
+%macros from Bob Gray
+\usepackage{"./macro/GrandMacros"}
+\usepackage{"./macro/Macro_BIO235"}
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% TItle page with contents %%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{\textbf{CS 181 Machine Learning}\\ 
+\textbf{Practical 3 Report, Team \textit{Deep Ellum}}}
+
+\pretitle{\begin{centering}\Large}
+\posttitle{\par\end{centering}}
+
+\date{\today}
+\vspace{-10em}
+\maketitle
+\vspace{-2em}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% Formal Sections %%%%% %%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{\textbf{Exploratory Analysis}}\label{sec:EDA}
+
+\begin{figure}[!h]
+        \centering
+        \begin{subfigure}[b]{0.45\textwidth}
+                \includegraphics[width=\textwidth]{"./plots/hist_arts"}
+                \caption{Number of Audience per Artist}
+                \label{fig:gull}
+        \end{subfigure}%
+        ~
+        \begin{subfigure}[b]{0.45\textwidth}
+                \includegraphics[width=\textwidth]{"./plots/hist_user"}
+                \caption{Number of Artist per Audience}
+                \label{fig:tiger}
+        \end{subfigure}
+        \caption{Distribution of the number of audience per artist (\textbf{Left}) and the number of artist per audience (\textbf{Right})}
+        \label{fig:freq}
+\end{figure}
+
+\section{\textbf{A Collaboration-Filtering-based Approach}}\label{sec:EDA}
+
+\subsection{Background}
+The number of plays $r_{ui}$ measures the preference by user \textit{u} of artist \textit{i}, where high values indicate stronger preference. Baseline predictors capture the systematic tendencies for some artists to receive more numbers of plays than others, and for some users to play more often than others. We denote the overall number of plays by $\mu$.The parameters $b_u$ and $b_i$ respectively represent the observed bias of user \textit{u} and artist \textit{i} from the average. So a baseline prediction for the number of plays $r_{ui}$ is denoted by $b_{ui}$:
+
+$$\hat{r}_{ui}=b_{ui} =\mu+b_u+b_i$$
+
+We then minimize the regularized square error to obtain the model parameters:
+
+
+$$\min_{\bb*} \sum_{(u, i) \in \Ksc} (r_{ui} - \mu - b_u - b_i) + \lambda_1 \Big(\sum_u b_u^2+\sum_i b_i^2 \Big)$$
+
+The first term intends to find $b_u$'s and $b_i$'s that fit the given numbers of plays. The second regularizing term penalizes the magnitude of the parameters to avoid overfitting. 
+
+\subsection{SVD Model}
+Matrix factorization techniques model user-item interactions as inner products in a joint latent factor space of \textit{f} dimensions. Accordingly, for a given artist \textit{i}, the elements of $q_i$ measure item characteristics. For a given user \textit{u}, the elements of $p_u$ measure user preferences. Hence the dot product, $q_i^Tp_u$ represents the interaction between artist \textit{i} and user \textit{u}, where high values mean stronger overall interest of the user in the artist's characteristics. Thus, the number of plays is predicted by the formula:
+
+$$\hat{r}_{ui} =\mu+b_i+b_u+q_i^T p_u$$
+
+In order to estimate ($b_u,b_i,p_u$ and $q_i$) one can solve the least squares problem:
+
+$$\min_{\bb*,\bq*,\bp*} \sum_{(u, i) \in \Ksc} (r_{ui} - \mu - b_u - b_i - q_i^Tp_u)^2 + \lambda_4 \Big(b_i^2 + b_u^2 + ||q_i||^2 + ||p_u||^2 \Big)$$
+
+The constant $\lambda_4$ is usually determined by cross validation. A straightforward stochastic gradient descent optimization involves the algorithm which loops through all numbers of plays in our training data. Denote by $e_{ui} = r_{ui} - \hat{r}_{ui}$ the associated prediction error. We move in the opposite direction of the gradient and modify the parameters:
+
+\begin{enumerate}
+  \item $b_u \leftarrow b_u+\gamma \cdot(e_{ui}-\lambda_4 \cdot b_u)$
+  \item $b_i \leftarrow b_i +\gamma \cdot (e_{ui}-\lambda_4 \cdot b_i)$
+  \item $q_i \leftarrow q_i + \gamma \cdot(e_{ui}\cdot p_u - \lambda_4*q_i)$
+  \item $p_u \leftarrow p_u + \gamma \cdot(e_{ui}\cdot q_i - \lambda_4*p_u)$
+  
+\end{enumerate}
+
+\subsection{SVD ++ Model}
+"SVD++ model" integrates other implicit feedback  in order to increase prediction accuracy. It models a user factor by the identity of the artists, and offers accuracy superior to SVD. A new set of item factors is added to characterize users according to the set of artists. The new item factors relate each artist\textit{i} to a factor vector $y_i \in \mathbb{R}^f$. The model is specified as below, where set $R(u)$ contains the artists correspond to user \textit{u}:
+
+$$\hat{r}_{ui} =\mu+b_i+b_u+q_i^T \Big(p_u+|R(u)|^{-\frac{1}{2}} \sum_{j \in R(u)}y_j \Big)$$
+
+Model parameters are determined by solving the related least squares problem. We loop over all known plays in $\Ksc$:
+
+\begin{enumerate}
+  \item $b_u \leftarrow b_u+\gamma \cdot(e_{ui}-\lambda_5 \cdot b_u)$
+  \item $b_i \leftarrow b_i +\gamma \cdot (e_{ui}-\lambda_5 \cdot b_i)$
+  \item $q_i \leftarrow q_i + \gamma \cdot(e_{ui}\cdot (p_u + |R(u)|^{-\frac{1}{2}}\sum_{j \in R(u)}y_j)- \lambda_6*q_i)$
+  \item $p_u \leftarrow p_u + \gamma \cdot(e_{ui}\cdot q_i - \lambda_6*p_u)$
+  \item $\forall  j \in R(u)$:
+  $y_j \leftarrow y_j+\gamma \cdot(e_{ui} \cdot|R(u)|^{-\frac{1}{2}} \cdot q_i - \lambda_6 \cdot y_j)$
+  
+
+\end{enumerate}
+  
+
+\subsection{Fused item-item user-user model}
+A user-user neighborhood model predicts rating by considering how users with similar tastes rated the same items. Each user \textit{u} is associated with two vectors $\it {p_u, z_u} \in \mathbb{R}^f$.
+Item-item relationships could be factored by connecting each item \textit{i} with three vectors: $\it{q_i, x_i, y_i}\in \mathbb{R}^f$, which map items into a latent factor space. Combining predictions of both item-item and user-user models gives improved overall accuracy. The below model sums the user-user model and item-item model, which optimizes the two models simultaneously:\\
+
+$x_i, y_i, q_i \in \mathbb{R}^f$
+\begin{align*}
+\hat{r}_{ui} & = 
+\bigg\{  \mu + b_i + b_u  \bigg\} + 
+q_i^T 
+\bigg\{ \frac{\sum_{j \in R(u)} (r_{ui} - b_{uj}) x_j +  y_j }
+{|R(u)|^{-\frac{1}{2}}} \bigg\} + 
+p_u^T
+\bigg\{ 
+\frac{\sum_{v \in R(u)} \big[ (r_{vi} - b_{vi}) z_v \big] }{|R(i)|^{-\frac{1}{2}}}
+\bigg\}
+\end{align*}
+
+In order to estimate $(x_i,y_i,z_v,p_u,q_i)$, one can solve the below least square problem through Stochastic Gradient Descent:
+
+\begin{align*}
+\min_{\bq, \bp, \bx, \by, \bz} \sum_{(u, i) \in \Ksc} (r_{ui} - \hat{r}_{ui}) + \lambda \Big(  ||b_i||^2 + ||b_u||^2 + ||q_i||^2 + ||p_u||^2 + 
+\sum_{j \in R(u)} (||x_j||^2 + ||y_j||^2) +
+\sum_{v \in R(i)} (||z_v||^2)  \Big)
+\end{align*}
+
+\fbox{\parbox{\textwidth}{
+\begin{itemize}
+\item[] \textbf{LearnFactorizedModel}($r_{ui}$, $f$)
+\item[] \textbf{for} iteration = 1,...,  \textbf{do}
+\begin{itemize}
+\item [] \textbf{for} user = 1,...,  \textbf{do}
+\item []
+\end{itemize}
+\end{itemize}
+}}
+
+\subsection{Parameter selection}
+
+
+\section{\textbf{Results}}
+
+
+\section{\textbf{Discussion}}
+The collaborative filtering algorithms described above may not be  successful to model the number of plays, as the existing algorithms have trouble making accurate predictions for users with very few plays. Alternatively, probabilistic algorithms that scale linearly with the number of observations have been proved to perform well on very sparse and imbalanced datasets, such as our Streaming Music dataset.
+
+\subsection{\textbf{Probabilistic Matrix Factorization (PMF)}}
+Denote the number of plays of user \textit{u} for artist \textit{i} by $R_{ui}$. Suppose we have \textit{M} artists and \textit{N} users. Let $U \in R^{D*N}$ and $V \in R^{D*M}$ be latent user and artist feature matrices, with column vectors $U_u$ and $V_i$ representing user-specific and artist-specific latent feature vectors respectively. We can define the conditional distribution over the observed numbers of plays as
+
+$$p(R|U, V, \sigma^2) = \prod_{u=1}^{N} \prod_{i=1}^M \Big[\Nsc(R_{ui}|U_u^TV_i,\sigma^2) \Big]^{I_{ui}}$$,
+
+
+where $\Nsc(x|\mu,\sigma^2)$ represents the probability density function of the Gaussian distribution with mean $\mu$ and variance $\sigma^2$, and $I_{ui}$ is the indicator function that is equal to 1 if user \textit{u} listened to the track from artist \textit{i} and equal to 0 otherwise. We also place zero-mean spherical Gaussian priors on user and artist feature vectors:
+$$p(U|\sigma_U^2) = \prod_{i=1}^N \Nsc(U_u|0,\sigma_U^2 I)$$ 
+$$p(V|\sigma_V^2)  = \prod_{j=1}^M \Nsc(V_i|0,\sigma_V^2 I)$$
+
+The log of the posterior distribution over the use and the artist feature is:
+
+\begin{align*}
+ln{\it{p}}(U,V|R,\sigma^2,\sigma_V^2,\sigma_U^2) =& 
+-\frac{1}{2\sigma^2}\sum_{u=1}^N \sum_{i=1}^M I_{ui}(R_{ui} - U_u^TV_i)^2
+-\frac{1}{2\sigma_U^2} \sum_{u=1}^N U_u^TU_u-\frac{1}{2\sigma_V^2}\sum_{i=1}^M V_i^TV_i 
+\\
+& -\frac{1}{2} \Big( \Big(\sum_{u=1}^N\sum_{i=1}^M I_{ui} \Big) ln\sigma^2 + NDln\sigma_U^2 + MDln\sigma_V^2 \Big) + C
+\end{align*}
+
+Maximizing the above log-posterior over artist and user features is equivalent to minimizing the below sum-of-squared-errors objective function:
+$$E = \frac{1}{2}\sum_{u=1}^N \sum_{i=1}^M I_{ij}(R_{ij}-U_i^TV_j)^2 + \frac{\lambda_U}{2} \sum_{i=1}^N ||U_u||_{Fro}^2 + \frac{\lambda_V}{2} \sum_{i=1}^M||V_j||_{Fro}^2$$
+
+where $\lambda_U = \sigma^2 / \sigma_U^2$, $\lambda_V = \sigma^2 / \sigma_V^2$, and $||\cdot||_{Fro}^2$ represents the Frobenius norm. This model is a probabilistic extension of the SVD model, since the objective function reduces to the SVD objective in the limit of prior variances going to infinity.
+
+\subsection{\textbf{Automatic Complexity Control for PMF}}
+Adaptive priors can be included in the PMF model over the artist and user feature vectors to control model complexity automatically. Specifically, the model complexity is controlled by the hyperparameters: the noise variance $\sigma^2$ and the parameters of the priors $\sigma_U^2$ and $\sigma_V^2$. Using spherical priors for user and artist feature vectors leads to automatically chosen $\lambda_U$ and $\lambda_V$. We maximize the below log-posterior to find a point estimate of parameters and hyperparameters:
+
+$$
+lnp(U,V,\sigma^2,\Theta_U, \Theta_v|R) =
+ln{\it{p}}(R|U,V,\sigma^2)+ln{\it{p}}(U|\Theta_U)+ln{\it{p}}(V|\Theta_V)+ln{\it{p}}(\Theta_U)+ ln{\it{p}}(\Theta_V)+C
+$$
+where $\Theta_U$ and $\Theta_V$ are the hyperparameters for the priors over user and artist feature vectors respectively. We can simplify learning by alternating between optimizing the hyperparameters and updating the feature vectors using steepest asent with the values of hyperparameters fixed. 
+
+\subsection{\textbf{Constrained PMF}}
+Based on the assumption that users who play tracks from similar artists have similar preferences, we can also implement a constrained version of the PMF model. We constrain user-specific feature vectors that have a strong effect on infrequent users. Let $W\in R^{D*M}$ be a similarity constraint matrix. The column vectors of the $W$ matrix capture the effect of a user having played music from a particular artist has on the prior mean of the user's feature vector. Therefore, users that have played music from the similar artists will have similar prior distributions for their feature vectors.\\
+
+As a result, the training time for the constrained PMF model scales linearly with the number of observations, providing a fast and simple implementation. 
+
+\section{\textbf{Reference}}
+
+
+
+\end{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

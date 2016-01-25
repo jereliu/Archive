@@ -1,0 +1,8 @@
+\BOOKMARK [1][-]{section.1}{Exploratory Analysis}{}% 1
+\BOOKMARK [1][-]{section.2}{Embedding and Feature Extration}{}% 2
+\BOOKMARK [2][-]{subsection.2.1}{Representaion of Extraction Target}{section.2}% 3
+\BOOKMARK [2][-]{subsection.2.2}{Feature Extraction and Prunning}{section.2}% 4
+\BOOKMARK [1][-]{section.3}{Model Choice and Justifications}{}% 5
+\BOOKMARK [2][-]{subsection.3.1}{Technical Detail of Random Forest}{section.3}% 6
+\BOOKMARK [1][-]{section.4}{Parameter Selection}{}% 7
+\BOOKMARK [1][-]{section.5}{Discussion}{}% 8

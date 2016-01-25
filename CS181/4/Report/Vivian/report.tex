@@ -1,0 +1,210 @@
+\documentclass[11pt]{article}
+
+%formating author affiliation
+\usepackage{authblk}
+\author[1]{(Jeremiah) Zhe Liu}
+\author[2]{(Vivian) Wenwan Yang}
+\author[1]{Jing Wen}
+\affil[1]{Department of Biostatistics, Harvard School of Public Health}
+\affil[2]{Department of Computational Science and Engineering, SEAS}
+
+% change document font family to Palatino, and code font to Courier
+\usepackage{mathpazo} % add possibly `sc` and `osf` options
+\usepackage{eulervm}
+\usepackage{courier}
+%allow formula formatting
+
+%identation in nested enumerates
+\usepackage[shortlabels]{enumitem}
+\setlist[enumerate,1]{leftmargin=1cm} % level 1 list
+\setlist[enumerate,2]{leftmargin=2cm} % level 2 list
+
+%flush align equations to left, this also loads amsmath 
+%\usepackage[fleqn]{mathtools}
+\usepackage{mathtools}
+\usepackage{amsthm}
+\DeclareMathAlphabet\mathbfcal{OMS}{cmsy}{b}{n}
+\usepackage{comment}
+
+%declare math symbolz
+%# inner product
+\DeclarePairedDelimiter{\inner}{\langle}{\rangle}
+
+%declare argmin
+\newcommand{\argmin}{\operatornamewithlimits{argmin}}
+
+%declare checkmark
+\usepackage{pifont}% http://ctan.org/pkg/pifont
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}%
+
+%title positon
+\usepackage{titling} %fix title
+\setlength{\droptitle}{-6em}   % Move up the title 
+
+%change section title font size
+\usepackage{titlesec} 
+\titleformat{\section}
+  {\normalfont\fontsize{12}{15}}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\fontsize{12}{13}}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+  {\normalfont\fontsize{12}{13}}{\thesubsubsection}{1em}{}
+
+%overwrite bfseries to allow formula in section title  
+\def\bfseries{\fontseries \bfdefault \selectfont \boldmath}
+
+% change page margin
+\usepackage[margin=0.8 in]{geometry} 
+
+%disable indentation
+\setlength\parindent{0pt}
+
+%allow inserting multiple graphs
+\usepackage{graphicx}
+\usepackage[skip=1pt]{subcaption}
+\usepackage[justification=centering,font=small]{caption}
+\newcommand{\indep}{\rotatebox[origin=c]{90}{$\models$}}%indep sign
+
+%allow code chunks
+\usepackage{listings}
+%\lstset{basicstyle=\footnotesize\ttfamily,breaklines=true}
+\lstset{basicstyle=\footnotesize\ttfamily,breaklines=true}
+\lstset{frame=lrbt,xleftmargin=\fboxsep, xrightmargin=-\fboxsep}
+\lstset{language=R, commentstyle=\bfseries, 
+keywordstyle=\ttfamily} %R-related formatting
+\lstset{escapeinside={<@}{@>}}
+
+%allow merged cell in tables
+\usepackage{multirow}
+
+%allow http links
+\usepackage{hyperref}
+
+%allow different font colors
+\usepackage{xcolor}
+
+%Thm and Def environment
+\theoremstyle{definition}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+
+\newenvironment{definition2}[1][Definition]{\begin{trivlist} %def without index
+\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+
+\newenvironment{example}[1][Example]{\begin{trivlist} %def without index
+\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+
+
+%macros from Bob Gray
+\usepackage{"./macro/GrandMacros"}
+\usepackage{"./macro/Macro_BIO235"}
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% TItle page with contents %%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{\textbf{CS 181 Machine Learning}\\ 
+\textbf{Practical 4 Report, Team \textit{la Derni\`{e}re Dame M}}}
+
+\pretitle{\begin{centering}\Large}
+\posttitle{\par\end{centering}}
+
+\date{\today}
+\vspace{-10em}
+\maketitle
+\vspace{-2em}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% Formal Sections %%%%% %%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{\textbf{Exploratory Analysis}}\label{sec:EDA}
+\subsection{\textbf{Q learning}}
+The state space is discretised over the horizontal and vertical distance from the next lower pipe. The Action is to either jump or not. Firstly, we need to find the distance from nearest pipe. After calculating the distance, we have our states defined, and the action is implemented via a static boolean variable, which defines the action performed by the monkey. As the monkey learns by performing actions randomly, it leans the q-value for the states it visits. After sufficient learning, based on the exploration rate, it decides what action is to be performed at a particular rate.Expanding the difinition of the Q function from the Bellman equations, we have: 
+\begin{enumerate}
+\item[]	$Q(s,a) = R(s,a)+\gamma\sum P(s'|s,a) max_{a'\in A}Q(s',a')$
+\item []   $= R(s,a)+\gamma E_{s'}[max_{a'\in A}Q(s',a')]$
+\item []   $=E_{s'}[R(s,a)+\gamma max_{a'\in A}Q(s',a')]$
+\end{enumerate}
+The goal is to estimate Q(s,a) as the expectation, where s' is drawn from $P(s'|s,a)$, of $R(s,a)+max_{a'}Q(s',a)$. Each time we actually take action a from state s we observe a transition to $s'$ and receive a reward r. This could give us the sample from  $P(s'|s,a)$. We could use this sample to update the old estimate Q(s,a). The details of the algorithm is shown below:                                           
+\begin{enumerate}
+\item [] Initialize Q(s,a) arbitrarily
+\item [] Repeat (for each episode):
+	\begin{enumerate}
+		\item [] Initialize s
+		\item [] Repeat (for each step of episode):
+		\item [] Choose a from s using policy derived from Q
+		\item [] Take action a, observe r, s'
+		\item [] $Q(s,a)\leftarrow Q(s,a)+\alpha \times [r+\gamma  max_a'Q(s',a')-Q(s,a)]$
+		\item []$s\leftarrow s'$
+	\end{enumerate}
+\item []  until s is terminal
+\end{enumerate}
+
+$0<\gamma<1$ is the discount factor and $0<\alpha<1$ is the learning rate. The learning rate $\alpha$ determining how much of an effect the new sample has on the current estimate. If $\alpha$ is large, we will adjust quickly but may not converge. What we did is to decrease $\alpha$ gradually as the number of samples of $Q(s,a)$ increases.
+
+
+\subsection{\textbf{Exploration vs Exploitation}}
+The monkey has to determine what action to take even while it is learning. It receives rewards and punishments even as it is learning. The monkey has to spend time to learn the pipes, but we will expect the monkey to start being productive before the monkey has learned everything there is to know about the pipe. The monkey needs to decide what to do considering both the effect of its action on its immediate rewards and future state, and the need to learn for the future. This issue is known as the exploration-exploitation tradeoff. Q-learning has the following two theoretical properties:
+\begin{enumerate}
+	\item [i] If every state-action pair(s,a) is visited an unbounded number of times and the learning rate $\alpha$ is "eventually small enough" then the Q-values converge to the limit.
+	\item [ii] If we exploit the Q-values in the limit, then the policy converges to the optimal policy in the limit.
+\end{enumerate}
+In order to achieve these two requirements, we define the distinct learning rate for each state/action pair and have that rate be $\alpha_k(s,a)=1/k$ where k is the number of times action $\alpha$ has been taken from state s. We adopt the $"\varepsilon-greedy"$ policy that the optimal action is taken with probability $1-\varepsilon$, but with probability $\varepsilon$, a uniformly random action is taken to induce exploration.We took $\varepsilon=1/t$, where t is the number of time periods that the monkey has experience.
+
+
+
+
+
+
+
+
+\section{\textbf{Method}}
+
+\subsection{\textbf{Rationale on Model Choice}}
+
+\subsection{\textbf{Estimation}}\label{sec:estimation}
+
+\subsection{\textbf{Numerical Challenges \& Further Modification}}
+
+\subsubsection{Parameter Selection}
+
+\newpage
+\section{\textbf{Discussion \& Possible Directions}}
+
+
+\newpage
+\section*{\textbf{Reference}}
+\begin{enumerate}
+\item \label{ref:handbook}
+Ricci F, Rokach L, Shapira B et al. (2010) \textbf{Recommender Systems Handbook}. \textit{Springer}. 
+\item \label{ref:MFieee}
+Koren Y, Bell R, Volinsky C. (2009) \textbf{Matrix factorization techniques for recommender systems}. \textit{IEEE Computer} Aug 2009, 42-49. 
+\item \label{ref:WLA}
+Srebro N,  Jaakkola T.(2003) \textbf{Weighted low-rank approximations}. \textit{Proceedings of the Twentieth International Conference} 720–727.
+\item \label{ref:PMF}
+R Salakhutdinov, A Mnih. (2008) \textbf{Probabilistic Matrix Factorization}. \textit{Advances in Neural Information Processing Systems} Vol. 20
+
+\item \label{ref:implicit}
+Koren, Y. (2008) \textbf{Factorization Meets the Neighborhood: a Multifaceted Collaborative Filtering Model}, \textit{Proc. 14th ACM SIGKDD International Conference on Knowledge Discovery and
+Data Mining}.
+
+\end{enumerate}
+
+\end{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

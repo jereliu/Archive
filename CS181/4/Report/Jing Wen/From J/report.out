@@ -1,0 +1,13 @@
+\BOOKMARK [1][-]{section.1}{Exploratory Analysis}{}% 1
+\BOOKMARK [1][-]{section.2}{Method}{}% 2
+\BOOKMARK [2][-]{subsection.2.1}{Rationale on Model Choice}{section.2}% 3
+\BOOKMARK [2][-]{subsection.2.2}{Estimation}{section.2}% 4
+\BOOKMARK [3][-]{subsubsection.2.2.1}{SVM}{subsection.2.2}% 5
+\BOOKMARK [3][-]{subsubsection.2.2.2}{Model-based estimation}{subsection.2.2}% 6
+\BOOKMARK [3][-]{subsubsection.2.2.3}{Q-learning}{subsection.2.2}% 7
+\BOOKMARK [3][-]{subsubsection.2.2.4}{exploitation vs. exploration}{subsection.2.2}% 8
+\BOOKMARK [2][-]{subsection.2.3}{Numerical Challenges \046 Further Modification}{section.2}% 9
+\BOOKMARK [3][-]{subsubsection.2.3.1}{Parameter Selection}{subsection.2.3}% 10
+\BOOKMARK [1][-]{section.3}{Discussion \046 Possible Directions}{}% 11
+\BOOKMARK [2][-]{subsection.3.1}{Locally Weighted Regression}{section.3}% 12
+\BOOKMARK [2][-]{subsection.3.2}{Neural Network}{section.3}% 13

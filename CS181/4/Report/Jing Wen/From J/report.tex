@@ -1,0 +1,233 @@
+\documentclass[11pt]{article}
+
+%formating author affiliation
+\usepackage{authblk}
+\author[1]{(Jeremiah) Zhe Liu}
+\author[2]{(Vivian) Wenwan Yang}
+\author[1]{Jing Wen}
+\affil[1]{Department of Biostatistics, Harvard School of Public Health}
+\affil[2]{Department of Computational Science and Engineering, SEAS}
+
+% change document font family to Palatino, and code font to Courier
+\usepackage{mathpazo} % add possibly `sc` and `osf` options
+\usepackage{eulervm}
+\usepackage{courier}
+%allow formula formatting
+
+%identation in nested enumerates
+\usepackage[shortlabels]{enumitem}
+\setlist[enumerate,1]{leftmargin=1cm} % level 1 list
+\setlist[enumerate,2]{leftmargin=2cm} % level 2 list
+
+%flush align equations to left, this also loads amsmath 
+%\usepackage[fleqn]{mathtools}
+\usepackage{mathtools}
+\usepackage{amsthm}
+\DeclareMathAlphabet\mathbfcal{OMS}{cmsy}{b}{n}
+\usepackage{comment}
+
+%declare math symbolz
+%# inner product
+\DeclarePairedDelimiter{\inner}{\langle}{\rangle}
+
+%declare argmin
+\newcommand{\argmin}{\operatornamewithlimits{argmin}}
+
+%declare checkmark
+\usepackage{pifont}% http://ctan.org/pkg/pifont
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}%
+
+%title positon
+\usepackage{titling} %fix title
+\setlength{\droptitle}{-6em}   % Move up the title 
+
+%change section title font size
+\usepackage{titlesec} 
+\titleformat{\section}
+  {\normalfont\fontsize{12}{15}}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\fontsize{12}{13}}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+  {\normalfont\fontsize{12}{13}}{\thesubsubsection}{1em}{}
+
+%overwrite bfseries to allow formula in section title  
+\def\bfseries{\fontseries \bfdefault \selectfont \boldmath}
+
+% change page margin
+\usepackage[margin=0.8 in]{geometry} 
+
+%disable indentation
+\setlength\parindent{0pt}
+
+%allow inserting multiple graphs
+\usepackage{graphicx}
+\usepackage[skip=1pt]{subcaption}
+\usepackage[justification=centering,font=small]{caption}
+\newcommand{\indep}{\rotatebox[origin=c]{90}{$\models$}}%indep sign
+
+%allow code chunks
+\usepackage{listings}
+%\lstset{basicstyle=\footnotesize\ttfamily,breaklines=true}
+\lstset{basicstyle=\footnotesize\ttfamily,breaklines=true}
+\lstset{frame=lrbt,xleftmargin=\fboxsep, xrightmargin=-\fboxsep}
+\lstset{language=R, commentstyle=\bfseries, 
+keywordstyle=\ttfamily} %R-related formatting
+\lstset{escapeinside={<@}{@>}}
+
+%allow merged cell in tables
+\usepackage{multirow}
+
+%allow http links
+\usepackage{hyperref}
+
+%allow different font colors
+\usepackage{xcolor}
+
+%Thm and Def environment
+\theoremstyle{definition}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+
+\newenvironment{definition2}[1][Definition]{\begin{trivlist} %def without index
+\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+
+\newenvironment{example}[1][Example]{\begin{trivlist} %def without index
+\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+
+
+%macros from Bob Gray
+\usepackage{"./macro/GrandMacros"}
+\usepackage{"./macro/Macro_BIO235"}
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% TItle page with contents %%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{\textbf{CS 181 Machine Learning}\\ 
+\textbf{Practical 4 Report, Team \textit{la Derni\`{e}re Dame M}}}
+
+\pretitle{\begin{centering}\Large}
+\posttitle{\par\end{centering}}
+
+\date{\today}
+\vspace{-10em}
+\maketitle
+\vspace{-2em}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% Formal Sections %%%%% %%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{\textbf{Exploratory Analysis}}\label{sec:EDA}
+
+
+\section{\textbf{Method}}
+
+\subsection{\textbf{Rationale on Model Choice}}
+
+\subsection{\textbf{Estimation}}\label{sec:estimation}
+\subsubsection{SVM}
+The SVM maps the input vectors into high-dimensional feature space and returns the maximum margin hyper plane. SVM algorithm with a linear kernal could be implemented by constructing the following problem:
+$$min_{r,w,b}\dfrac{1}{2}||w||^2$$
+$$s.t. y^{(i)T}\big(w^Tx^{(i)}+b\big)\geq1, i=1...n$$
+Data:\\
+The SVM is implemented in a static tree trunk setting, and only the first tree ahead of the monkey is considered. Given the command to jump, the current state is labeled as 1, otherwise current state is labeled as -1. Hence at each step, the training set includes a current state $x^{(i)}=['vel','top','bot']=[\Delta x,\Delta y,\Delta z]$ and related label $y^{(i)}\in \{-1,1\} $.\\
+
+We can then choose a high-dimension feature space. For the below example, nine features from fundamental analysis are selected by adding second and third order of the feature.
+$$\boldsymbol{\Phi} = \big[\Delta x,\Delta y,\Delta z, \Delta x^2,\Delta y^2,\Delta z^2,\Delta x^3,\Delta y^3,\Delta z^3 \big]$$ 
+$$k(x,z) = \boldsymbol{\Phi}^T\boldsymbol{\Phi}$$
+\subsubsection{Model-based estimation}
+\textbf{ Optimization Algorithm}\\
+Value iteration could be implemented in order to find the value function for small MDPs. The value iteration is illustrated as follows:\\
+
+For each state, initialize $V(s):=0$.\\
+Repeat until converge\\
+$\{$For each state:
+$$V(s) = R(s) + \max\limits_{a\in A}\gamma\sum_{s'}P(s'|s,a)V(s')$$
+$\}$\\
+
+After $V(s)$ and $P_{sa}$ were learnt by the above algorithm, the optimal $a$ is given by:
+$$a^* = \max\limits_{a\in A}P(s'|s,a)V(s)$$
+\subsubsection{Q-learning}
+\subsubsection{exploitation vs. exploration}
+$e = 0.001$
+
+$\epsilon = \frac{e}{k}$
+
+$k$ = \# of actions taken from state s
+
+\subsection{\textbf{Numerical Challenges \& Further Modification}}
+
+\subsubsection{Parameter Selection}
+why $\gamma = 0.95$
+$\alpha = 1/k$
+\newpage
+\section{\textbf{Discussion \& Possible Directions}}
+\subsection{Locally Weighted Regression}
+One method has effectively dealt with practical situations with large state spaces is locally weighted regression (LWR). It improves the performance of a discrete-state algorithm by applying a function approximator to a continuous-state problem. The method consists of two steps. The first one involves learning the value function over a small number of discrete states. The second step consists focusing the function approximator to generalize from the discrete states to a continuous state space, thereby effectively using previously discarded state information.\\
+
+LWR creates a local model of a function around a query point. Training points are weighted according to a function of their distance from the query point, and this function is typically a kernel function. The below algorithm describes how LWR techniques construct a value function approximation. First, we obtain approximations for the current Q-value, and the maximum value from the resulting state, $s'$. We keep track of the points used in the LWR prediction of $q$ for later and their associated weights. Then the new approximation of $Q(s,a)$ is calculated  using the standard Q-learning update rule. This value is then used as a normal supervised training point for the LWR subsystem. We then update each of the points in $K$, bringing this value closer to $Q(s,a)$ depending its proximity to $(s,a)$, as measured its kernel weights, $\xi_i$. \\
+\\
+\textbf{Input}:\\
+Experience, $(s,a,r,s')$\\
+Learning rate, $\alpha$\\
+Discount factor, $\gamma$\\
+LWR bandwith, $h$\\
+1. $q \leftarrow Q_{predict}(s,a)$\\
+2. $q_{next} \leftarrow max_a' Q_{predict}(s',a')$\\
+3. $K \leftarrow$ set used in calculation of $q$\\
+4. $\xi_i \leftarrow exp(-(q-k_i)^2/h^2)$\\
+5. $q_{new} \leftarrow q+\alpha(r+\gamma q_{next} - q)$\\
+6. Lean $Q(s,a)\leftarrow q_{new}$\\
+7. \textbf{for} each point, $(s_i, a_i)$ in $K$ do\\
+8. $Q(s_i, a_i) \leftarrow Q(s_i, a_i) + \xi_i(q_{new} - Q(s_i, a_i))$\\
+
+LWR is an aggressive learning algorithm that is fast to train. It can make reasonable predictions based on very little training data. Only simple linear functions are required to approximate the global function in the neighborhoold of the query point, which avoids the difficult task of generating a global model of a nonlinear function. In addition, since LWR retains all of the training data, the approximation could be reevaluated on the original training points.
+ 
+\subsection{Neural Network}
+To deal with the large state space, besides discretizing the position space into bins and locally weighted regression, another strategy is implementing function approximation, such as a neural network. $\hat{Q}_\theta(s,a)$ could be represented by a non-linear approximator. The steps are illustrated as below:\\
+\\a. Start with initial parameter values: $\theta$.\\
+  b. Take action according to an exploit/explore policy, so that the results should converge to greedy policy.\\
+  c. Perform TD update for each parameter:
+  $$\theta_i = \theta_i + \alpha(R(s) + \beta\max\limits_{a'}\hat{Q}_\theta(s', a')-\hat{Q}_\theta(s, a)) \dfrac{\partial {\hat{Q}_\theta(s, a)}}{\partial{\theta_i}}$$\\
+  d. Repeat step b and c until convergence.\\
+  
+Q-learning with nonlinear approximators often works well in practice. Typically the space has many local minima and convergence is not guaranteed. 
+ 
+
+
+\newpage
+\section*{\textbf{Reference}}
+\begin{enumerate}
+\item \label{ref:handbook}
+Moerman W, Bakker B, Wiering M. (2009) \textbf{Hierarchical Assignment of Behaviours to Subpolicies}. \textit{Cognitive Artificial Intelligence, Utrecht University}. 
+\item \label{ref:MFieee}
+Aljibury H. (2001) \textbf{Improving the Performance of Q-learning with Locally Weighted Regression}. \textit{Electrical Engineering, University of Florida}. 
+\item \label{ref:WLA}
+Smart W,  Kaelbling L.(2003) \textbf{Weighted low-rank approximations}. \textit{Proceedings of the Twentieth International Conference} 720–727.
+\item \label{ref:PMF}
+R Salakhutdinov, A Mnih. (2008) \textbf{Probabilistic Matrix Factorization}. \textit{Advances in Neural Information Processing Systems} Vol. 20
+
+\item \label{ref:implicit}
+Koren, Y. (2008) \textbf{Factorization Meets the Neighborhood: a Multifaceted Collaborative Filtering Model}, \textit{Proc. 14th ACM SIGKDD International Conference on Knowledge Discovery and
+Data Mining}.
+
+\end{enumerate}
+
+\end{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
